@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>IN Clause Formatter — Responsive + Dark Mode</title>
+
+<style>
+  :root{
+    --bg: #ffffff;
+    --panel: #f6f7f8;
+    --muted: #6b7280;
+    --text: #0f172a;
+    --accent: #2563eb;
+    --border: #e6e9ed;
+    --radius: 10px;
+    --shadow: 0 6px 18px rgba(16,24,40,0.06);
+  }
+  [data-theme="dark"]{
+    --bg: #0b1220;
+    --panel: #0f1724;
+    --muted: #94a3b8;
+    --text: #e6eef8;
+    --accent: #4da3ff;
+    --border: #1f2a37;
+    --shadow: none;
+  }
+
+  html,body{
+    height:100%;
+    margin:0;
+    font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  body{
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    padding:22px;
+    box-sizing:border-box;
+    transition:background .18s, color .18s;
+  }
+
+  .app {
+    max-width:1300px;
+    margin:0 auto;
+  }
+
+  header {
+    display:flex;
+    gap:12px;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:16px;
+  }
+
+  header h1{
+    margin:0;
+    font-size:18px;
+    letter-spacing:-0.2px;
+  }
+
+  .controls {
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+
+  .btn {
+    background:var(--accent);
+    color:white;
+    border:0;
+    padding:9px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+    box-shadow:var(--shadow);
+  }
+  .btn.ghost {
+    background:transparent;
+    color:var(--muted);
+    border:1px solid var(--border);
+    font-weight:600;
+  }
+  .btn.small{
+    padding:6px 10px;
+    font-size:13px;
+    border-radius:7px;
+  }
+  .muted{
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  .two-col {
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:18px;
+  }
+
+  .panel {
+    background:var(--panel);
+    padding:14px;
+    border-radius:var(--radius);
+    border:1px solid var(--border);
+    box-shadow:var(--shadow);
+    display:flex;
+    flex-direction:column;
+    min-height:420px;
+  }
+
+  .panel h2{
+    margin:0 0 8px 0;
+    font-size:14px;
+  }
+  .panel .meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+  }
+
+  textarea.editor {
+    width:100%;
+    height:100%;
+    min-height:260px;
+    border-radius:8px;
+    border:1px solid transparent;
+    padding:12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+    font-size:13px;
+    color:var(--text);
+    background:transparent;
+    resize:vertical;
+    outline:none;
+  }
+
+  textarea.output {
+    width:100%;
+    height:100%;
+    min-height:260px;
+    border-radius:8px;
+    border:1px dashed var(--border);
+    padding:12px;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size:13px;
+    background:transparent;
+    color:var(--text);
+    white-space:pre-wrap;
+    word-break:break-word;
+    overflow-wrap:anywhere;
+  }
+
+  .actions {
+    display:flex;
+    gap:10px;
+    margin-top:12px;
+    flex-wrap:wrap;
+  }
+
+  .footer-note{
+    margin-top:8px;
+    font-size:13px;
+    color:var(--muted);
+  }
+
+  .toast {
+    position:fixed;
+    right:18px;
+    top:18px;
+    background:rgba(20,20,20,0.9);
+    color:white;
+    padding:10px 14px;
+    border-radius:8px;
+    transform:translateY(-8px);
+    opacity:0;
+    transition:opacity .25s, transform .25s;
+    z-index:9999;
+    pointer-events:none;
+  }
+  .toast.show{
+    opacity:1;
+    transform:none;
+  }
+
+  @media (max-width:900px){
+    .two-col{
+      grid-template-columns:1fr;
+    }
+    .panel{
+      min-height:320px;
+    }
+    header{
+      flex-direction:column;
+      align-items:flex-start;
+      gap:10px;
+    }
+  }
+
+  .counter-badge{
+    background:transparent;
+    color:var(--muted);
+    font-size:13px;
+    padding:6px 8px;
+    border-radius:8px;
+    border:1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<div class="app" role="application" aria-label="IN Clause Formatter">
+  <header>
+    <div>
+      <h1>IN Clause Formatter</h1>
+      <div class="muted">Paste values on the left — output is generated automatically on the right</div>
+    </div>
+
+    <div class="controls" aria-hidden="false">
+      <div id="themeBtnWrapper">
+        <button id="themeToggle" class="btn small ghost" aria-pressed="false">🌙 Dark</button>
+      </div>
+      <button id="clearBtn" class="btn small ghost">Clear</button>
+      <button id="copyBtn" class="btn small">Copy Output</button>
+    </div>
+  </header>
+
+  <main class="two-col" id="mainGrid">
+    <!-- LEFT -->
+    <section class="panel" aria-labelledby="input-title">
+      <div class="meta">
+        <div>
+          <h2 id="input-title">Input</h2>
+          <div class="muted">Paste newline or comma separated values (CSV friendly)</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="counter-badge" id="counter">0 items</div>
+        </div>
+      </div>
+
+      <textarea id="input" class="editor" placeholder="Paste values (one per line or comma separated). Example:
+urn:li:enterpriseCrmOpportunity:WTZ...
+urn:li:enterpriseCrmOpportunity:R6X..."></textarea>
+
+      <div class="footer-note">Tip: you can paste CSV or multi line lists. The formatter will split on newlines and commas.</div>
+    </section>
+
+    <!-- RIGHT -->
+    <section class="panel" aria-labelledby="output-title">
+      <div class="meta">
+        <div>
+          <h2 id="output-title">Formatted Output</h2>
+          <div class="muted">Auto formatted for SQL IN clause (single quotes + commas)</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="counter-badge" id="uniqueCounter">0 unique</div>
+          <div class="muted" id="modeLabel">Mode: <strong>Quoted</strong></div>
+        </div>
+      </div>
+
+      <textarea id="output" class="output" readonly aria-readonly="true"></textarea>
+
+      <div class="actions" style="margin-top:12px;">
+        <button id="formatNumbersBtn" class="btn small ghost">Format as Numbers (no quotes)</button>
+        <button id="formatTextBtn" class="btn small ghost" style="display:none">Format as Text (with quotes)</button>
+      </div>
+
+      <div style="margin-top:10px" class="muted">You can still edit the left input after formatting. Formatting buttons only change the output and auto copy the result.</div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+const inputEl = document.getElementById('input');
+const outputEl = document.getElementById('output');
+const counterEl = document.getElementById('counter');
+const uniqueCounterEl = document.getElementById('uniqueCounter');
+const toastEl = document.getElementById('toast');
+const copyBtn = document.getElementById('copyBtn');
+const clearBtn = document.getElementById('clearBtn');
+const themeToggle = document.getElementById('themeToggle');
+const formatNumbersBtn = document.getElementById('formatNumbersBtn');
+const formatTextBtn = document.getElementById('formatTextBtn');
+const modeLabel = document.getElementById('modeLabel');
+
+let lastFormattedMode = 'quoted';
+let toastTimer = null;
+
+function showToast(msg){
+  clearTimeout(toastTimer);
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1500);
+}
+
+function parseValuesFromText(text){
+  if (!text) return [];
+  const tokens = text.split(/[\r\n,]+/);
+  return tokens.map(t => t.trim()).filter(t => t.length>0);
+}
+
+function formatQuoted(values){
+  return values.map(v => `'${v.replace(/'/g, "''")}'`).join(',');
+}
+function formatNumberish(values){
+  return values.join(',');
+}
+
+function updateCounter(totalCount){
+  counterEl.textContent = `${totalCount} item${totalCount===1?'':'s'}`;
+}
+function updateUniqueCounter(uniqueCount){
+  uniqueCounterEl.textContent = `${uniqueCount} unique`;
+}
+
+function setModeLabel(mode){
+  lastFormattedMode = mode;
+  modeLabel.innerHTML = 'Mode: <strong>' + (mode === 'quoted' ? 'Quoted' : 'Numbers') + '</strong>';
+}
+
+/* main formatter: dedupe for output, never changes left textarea */
+function generateAndShow({autoCopy=true, preferNumbers=false} = {}){
+  const raw = inputEl.value || '';
+  const vals = parseValuesFromText(raw);
+  const uniqueVals = Array.from(new Set(vals));
+
+  updateCounter(vals.length);
+  updateUniqueCounter(uniqueVals.length);
+
+  if (preferNumbers){
+    const formattedNumbers = formatNumberish(uniqueVals);
+    outputEl.value = formattedNumbers;
+    setModeLabel('numbers');
+    formatTextBtn.style.display = 'inline-block';
+  } else {
+    const formatted = formatQuoted(uniqueVals);
+    outputEl.value = formatted;
+    setModeLabel('quoted');
+    formatTextBtn.style.display = 'none';
+  }
+
+  if (autoCopy && outputEl.value){
+    navigator.clipboard.writeText(outputEl.value).then(()=> showToast('Copied to clipboard'));
+  }
+}
+
+function formatAsTextFromNumbers(){
+  const raw = inputEl.value || '';
+  const vals = parseValuesFromText(raw);
+  const uniqueVals = Array.from(new Set(vals));
+
+  updateCounter(vals.length);
+  updateUniqueCounter(uniqueVals.length);
+
+  outputEl.value = formatQuoted(uniqueVals);
+  setModeLabel('quoted');
+  formatTextBtn.style.display = 'none';
+
+  if (outputEl.value){
+    navigator.clipboard.writeText(outputEl.value).then(()=> showToast('Copied quoted output'));
+  }
+}
+
+/* Events */
+
+inputEl.addEventListener('paste', () => {
+  setTimeout(()=> generateAndShow({autoCopy:true, preferNumbers:false}), 10);
+});
+
+let typingTimer = null;
+inputEl.addEventListener('input', () => {
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(()=> generateAndShow({autoCopy:true, preferNumbers:false}), 200);
+});
+
+copyBtn.addEventListener('click', ()=> {
+  if (!outputEl.value) return;
+  navigator.clipboard.writeText(outputEl.value).then(()=> showToast('Copied'));
+});
+
+clearBtn.addEventListener('click', ()=> {
+  inputEl.value = '';
+  outputEl.value = '';
+  updateCounter(0);
+  updateUniqueCounter(0);
+  setModeLabel('quoted');
+  formatTextBtn.style.display = 'none';
+});
+
+formatNumbersBtn.addEventListener('click', ()=> {
+  generateAndShow({autoCopy:true, preferNumbers:true});
+});
+
+formatTextBtn.addEventListener('click', ()=> {
+  formatAsTextFromNumbers();
+});
+
+/* Theme */
+
+function setTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  themeToggle.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+  themeToggle.setAttribute('aria-pressed', theme === 'dark');
+  localStorage.setItem('in-formatter-theme', theme);
+}
+
+themeToggle.addEventListener('click', ()=> {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  setTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+(function initTheme(){
+  const saved = localStorage.getItem('in-formatter-theme');
+  if (saved) setTheme(saved);
+  else {
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(prefersDark ? 'dark' : 'light');
+  }
+})();
+
+window.addEventListener('load', ()=> {
+  generateAndShow({autoCopy:false, preferNumbers:false});
+});
+</script>
+</body>
+</html>
